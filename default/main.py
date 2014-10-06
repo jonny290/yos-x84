@@ -4,38 +4,43 @@
 
 
 def refresh():
+
     """ Refresh main menu. """
     # pylint: disable=R0914
     #         Too many local variables
     from x84.bbs import getsession, getterminal, echo, Ansi, showcp437, ini, AnsiWindow
     import os
+    import random, time, glob
     session, term = getsession(), getterminal()
     session.activity = u'Main menu'
-    artfile = os.path.join(os.path.dirname(__file__), 'art', 'main.asc')
+    headers = glob.glob(os.path.join(os.path.dirname(__file__),"art","YOSBBS*.ANS"))
+    bannername = "YOSBBS"+str(random.randrange(1,len(headers))).zfill(2)+".ANS"
+    artfile = os.path.join(os.path.dirname(__file__), 'art', bannername)
     echo(term.clear())
     for line in showcp437(artfile):
         echo(line)
     echo(u'\r\n\r\n')
     entries = [
-        ('b', 'bS NEXUS'),
+    #   ('b', 'bS NEXUS'),
+        ('y', 'OsPOsT'),
         ('l', 'ASt CAllS'),
         ('o', 'NE liNERS'),
         ('w', "hO'S ONliNE"),
         ('n', 'EWS'),
-        ('c', 'hAt'),
+    #   ('c', 'hAt'),
         ('!', 'ENCOdiNG'),
-        ('t', 'EtRiS'),
-        ('s', 'YS. iNfO'),
+    #   ('t', 'EtRiS'),
+    #   ('s', 'YS. iNfO'),
         ('f', 'ORECASt'),
         ('e', 'dit PROfilE'),
-        ('p', 'OSt A MSG'),
-        ('r', 'EAd All MSGS'),
+    #   ('p', 'OSt A MSG'),
+    #   ('r', 'EAd All MSGS'),
         ('g', 'OOdbYE /lOGOff'),]
 
     # add LORD to menu only if enabled,
-    if ini.CFG.getboolean('dosemu', 'enabled') and (
-            ini.CFG.get('dosemu', 'lord_path') != 'no'):
-        entries.insert(0, ('#', 'PlAY lORd!'))
+#   if ini.CFG.getboolean('dosemu', 'enabled') and (
+#           ini.CFG.get('dosemu', 'lord_path') != 'no'):
+#       entries.insert(0, ('#', 'PlAY lORd!'))
 
     if 'sysop' in session.user.groups:
         entries += (('v', 'idEO CASSEttE'),)
@@ -43,9 +48,9 @@ def refresh():
     for key, name in entries:
         out_str = u''.join((
             term.bold(u'('),
-            term.bold_blue_underline(key),
+            term.bold_green_underline(key),
             term.bold(u')'),
-            term.bold_blue(name.split()[0]),
+            term.green(name.split()[0]),
             u' ', u' '.join(name.split()[1:]),
             u'  '))
         ansilen = len(Ansi(buf_str + out_str))
