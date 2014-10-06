@@ -108,97 +108,6 @@ def mark_read(idx):
         return True
 
 
-#def msg_filter(msgs):
-#    """
-#        filter all matching messages. userland implementation
-#        of private/public messaging by using the 'tags' database.
-#        'new', or unread messages are marked by idx matching
-#        session.user['readmsgs'] when read. Finally, implement 'group'
-#        tagging, so that users of group 'impure' are allowed to read
-#        messages tagged by 'impure', regardless of recipient or 'public'.
-#
-#        returns (msgs), (new). new contains redundant msgs
-#    """
-#    # pylint: disable=R0914,R0912,R0915
-#    #         Too many local variables
-#    #         Too many branches
-#    #         Too many statements
-#    from x84.bbs import list_msgs, echo, getsession, getterminal, get_msg, Ansi
-#    session, term = getsession(), getterminal()
-#    public_msgs = list_msgs(('public',))
-##    addressed_to = 0
-#    addressed_grp = 0
-#    filtered = 0
-#    deleted = 0
-#    private = 0
-#    public = 0
-#    new = set()
-#    echo(u' Processing ' + term.reverse_yellow('..'))
-#    for msg_id in msgs.copy():
-#        if msg_id in public_msgs:
-#            # can always ready msgs tagged with 'public'
-#            public += 1
-#        else:
-#            private += 1
-#        msg = get_msg(msg_id)
-#        if msg.recipient == session.user.handle:
-#            addressed_to += 1
-#        else:
-#            # a system of my own, by creating groups
-#            # with the same as tagged messages, you may
-#            # create private or intra-group messages.
-#            tag_matches_group = False
-#            for tag in msg.tags:
-#                if tag in session.user.groups:
-#                    tag_matches_group = True
-#                    break
-#            if tag_matches_group:
-#                addressed_grp += 1
-#            elif msg_id not in public_msgs:
-#                # denied to read this message
-#                if FILTER_PRIVATE:
-#                    msgs.remove(msg_id)
-#              .      filtered += 1
-#             .       continue
-#            n
-#            elif msg_id in DELETED:
-#                msgs.remove(msg_id)
-#                deleted += 1
-#        if msg_.id not in ALREADY_READ:
-#            n..
-#            new.add(msg_id)
-##
-#    if 0 == len(msgs):
-#        echo(u'\r\n\r\nNo messages (%s filtered).' % (filtered,))
-#    else:
-#        txt_out = list()
-#        if addressed_to > 0:
-#            txt_out.append('%s addressed to you' % (
-#                term.bold_yellow(str(addressed_to)),))
-#        if addressed_grp > 0:
-#            txt_out.append('%s addressed by group' % (
-#                term.bold_yellow(str(addressed_grp)),))
-#        if filtered > 0:
-#            txt_out.append('%s filtered' % (
-#                term.bold_yellow(str(filtered)),))
-#        if deleted > 0:
-#            n
-#            t.xt_out.append('%s deleted' % (
-#                term.bold_yellow(str(deleted)),))
-#        if public > 0:
-#            txt_out.append('%s public' % (
-#                term.bold_yellow(str(public)),))
-#        if private > 0:
-#            txt_out.append('%s private' % (
-#                term.bold_yellow(str(private)),))
-#        if len(new) > 0:
-#            txt_out.append('%s new' % (
-#                term.bold_yellow(str(len(new),)),))
-#        if 0 != len(txt_out):
-#            echo(u'\r\n\r\n' + Ansi(
-#                u', '.join(txt_out) + u'.').wrap(term.width - 2))
-#    return msgs, new
-
 
 def banner():
     """ Returns string suitable for displaying banner. """
@@ -539,11 +448,13 @@ def read_messages(msgs, title, currentpage, totalpages, threadid):
 
 
 def getposts(threadid='3263403', number=40):
+    from x84.bbs import User, getsession
     import requests
     import bs4
+    session = getsession()
     url = 'http://forums.somethingawful.com/showthread.php?threadid='+threadid+'&goto=lastpost'
     print url
-    cookies = dict(bbuserid='78389', bbpassword='9bf24e58b249fd296f751a98456ce72d')
+    cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
     response = requests.get(url, cookies=cookies)
     soup = bs4.BeautifulSoup(response.text)
     title = soup.find('a',{"class":"bclast"}).text
@@ -573,9 +484,10 @@ def getposts(threadid='3263403', number=40):
     return zip(authors, bodies, seens), title, currentpage, totalpages
 
 def makepost(threadid, body):
+    from x84.bbs import session
     baseurl = 'http://forums.somethingawful.com/newreply.php'
     replyurl = baseurl+'?action=newreply&threadid='+threadid
-    cookies = dict(bbuserid='78389', bbpassword='9bf24e58b249fd296f751a98456ce72d')
+    cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
     echo(replyurl)
     response = requests.get(replyurl, cookies=cookies)
     soup = bs4.BeautifulSoup(response.text)
@@ -590,8 +502,10 @@ def makepost(threadid, body):
 
 
 def getthreads(number=20):
+    from x84.bbs import getsession
+    session = getsession()
     url = 'http://forums.somethingawful.com/forumdisplay.php?forumid=219'
-    cookies = dict(bbuserid='78389', bbpassword='9bf24e58b249fd296f751a98456ce72d')
+    cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
     response = requests.get(url, cookies=cookies)
     soup = bs4.BeautifulSoup(response.text)
     threads = soup.findAll("tr", {'class':['thread', 'thread seen']})
@@ -715,15 +629,17 @@ def redrawlightbar(filer, lighty,lightx,lightbar,start,antalrader): # if the var
     term = getterminal()
     echo(term.move(lighty,lightx))
 
-    for i in range (0, 10):
-        echo(term.move(lighty+i-1,lightx)+u' '*(term.width - lightx)) # erases 60 char. dont want to use clreol. So filenames/directories can be 45 char.
+    for i in range (0, term.height - 2):
+        echo(term.move(lighty+i,lightx)+u' '*(term.width - lightx)) # erases 60 char. dont want to use clreol. So filenames/directories can be 45 char.
 
     i2 = 0
     for i in range (start,start+antalrader):
+        leftbar = filer[i][1][:term.width - 32].ljust(term.width - 30)
+        rightbar = filer[i][5].rjust(19)+u' '+filer[i][6].zfill(8)
         if i2 == lightbar:
-            echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+filer[i][1]+term.normal)
+            echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+leftbar+term.normal+rightbar+term.normal)
         else:
-            echo(term.move(lighty+i-start-1,lightx)+term.white+filer[i][1])
+            echo(term.move(lighty+i-start-1,lightx)+term.white+leftbar+term.normal+rightbar+term.normal)
         i2 = i2 + 1
 
 # ---------------------------------------------------
@@ -745,14 +661,14 @@ def main():
     """ Main procedure. """
     session = getsession()
     term = getterminal()
-    session.activity = u'browsing textfiles'
+    session.activity = u'yospostin'
     echo(term.clear+banner())
 
 #********** default variables for you to change ! ************* 
 
-    lightx = 8                                      # xpos for the lightbar
-    lighty = 10                                     # ypos for the lightbar
-    max_amount_rows = 10
+    lightx = 1                                      # xpos for the lightbar
+    lighty = 1                                    # ypos for the lightbar
+    max_amount_rows = term.height - 2
 
     filer = []
     filer = getthreads()

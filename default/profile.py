@@ -1,7 +1,3 @@
-"""
- User profile editor script for x/84, http://github.com/jquast/x84
-"""
-
 
 ABOUT_DOT_PLAN = (u'The .plan file is a throwback to early Unix '
                   + u'"blogosphere", this is a simple file that is '
@@ -38,8 +34,35 @@ def process_keystroke(inp, user):
     invalid = u'\r\niNVAlid.'
     assert is_self or 'sysop' in session.user.groups
 
+    if is_self and inp in (u'^',):
+        user['sausercookie'] = u''
+        user['sapasscookie'] = u''
     if is_self and inp in (u'c', u'C'):
         gosub('charset')
+
+    elif is_self and inp in (u'@',):
+        echo(u'\r\neNTER SA \'pass\' cookie: ')
+        sapasscookie = LineEditor(50, session.user['sapasscookie']).read()
+        echo(u"\r\n\r\nset SA pass cookie to '%s'? [yn]" % (sapasscookie,))
+        while True:
+            inp2 = getch()
+            if inp2 in (u'y', u'Y'):
+                session.user['sapasscookie'] = sapasscookie
+                break
+            elif inp2 in (u'n', u'N'):
+                break
+
+    elif is_self and inp in (u'!',):
+        echo(u'\r\neNTER SA \'user\' cookie: ')
+        sausercookie = LineEditor(30, session.user['sausercookie']).read()
+        echo(u"\r\n\r\nset SA user cookie to '%s'? [yn]" % (sausercookie,))
+        while True:
+            inp2 = getch()
+            if inp2 in (u'y', u'Y'):
+                session.user['sausercookie'] = sausercookie
+                break
+            elif inp2 in (u'n', u'N'):
+                break
 
     elif is_self and inp in (u't', u'T'):
         echo(term.move(term.height - 1, 0))
@@ -250,10 +273,10 @@ def dummy_pager(user):
                                term.bold_black(u'******'),),
             '(e)%-20s - %s' % (u'-MAil AddRESS',
                                term.bold(user.email),),
-            '(!)%-20s - %s' % (u'SA User Cookie',
-                               term.bold(user['sausercookie']),),
-            '(!)%-20s - %s' % (u'SA Pass Cookie',
-                               term.bold(user['sapasscookie']),),
+#            '(!)%-20s - %s' % (u'SA User Cookie',
+#                               term.bold(user['sausercookie']),),
+#            '(@)%-70s - %s' % (u'SA Pass Cookie',
+#                               term.bold(user['sapasscookie']),),
             (term.bold('t') +
                 '(i)%-19s - %s' % (u'MEOUt', term.bold(
                     str(user.get('timeout', def_timeout))),)),
