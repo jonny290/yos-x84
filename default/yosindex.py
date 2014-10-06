@@ -535,7 +535,7 @@ def getthreads(number=20):
         else:
             ratingalt = rating.find('img')["title"]
             ratings.append(ratingalt.split()[3])
-        lastposttimes.append(u' '.join(thread.find('td', {"class":"lastpost"}).find('div', {"class":"date"}).string.split()[:2]))
+        lastposttimes.append(u''.join(thread.find('td', {"class":"lastpost"}).find('div', {"class":"date"}).string))
         lastpostbys.append(thread.find('td', {"class":"lastpost"}).find('a', {"class":"author"}).string)
     return zip(ids, titles, authors, unreads, ratings, lastpostbys, lastposttimes)
 
@@ -634,12 +634,13 @@ def redrawlightbar(filer, lighty,lightx,lightbar,start,antalrader): # if the var
 
     i2 = 0
     for i in range (start,start+antalrader):
-        leftbar = filer[i][1][:term.width - 32].ljust(term.width - 30)
         rightbar = filer[i][5].rjust(19)+u' '+filer[i][6].zfill(8)
+        leftbar = filer[i][1][:term.width - len(rightbar) - 5]
         if i2 == lightbar:
-            echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+leftbar+term.normal+rightbar+term.normal)
+            echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+leftbar+term.normal)
         else:
-            echo(term.move(lighty+i-start-1,lightx)+term.white+leftbar+term.normal+rightbar+term.normal)
+            echo(term.move(lighty+i-start-1,lightx)+term.white+leftbar+term.normal)
+        echo(term.move(lighty+i-start-1,term.width - len(rightbar) - 2)+rightbar+term.normal)
         i2 = i2 + 1
 
 # ---------------------------------------------------
