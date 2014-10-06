@@ -41,7 +41,7 @@ def quote_body(msg, width=79, quote_txt=u'> ', hardwrap=u'\r\n'):
     return u''.join((
         'On ',
         #msg.stime.strftime(TIME_FMT), u' ',
-        #msg.author, ' wrote:',
+        msg.author, ' posted:',
         hardwrap, ucs, hardwrap))
 
 
@@ -484,7 +484,8 @@ def getposts(threadid='3263403', number=40):
     return zip(authors, bodies, seens), title, currentpage, totalpages
 
 def makepost(threadid, body):
-    from x84.bbs import session
+    from x84.bbs import getsession
+    session = getsession()
     baseurl = 'http://forums.somethingawful.com/newreply.php'
     replyurl = baseurl+'?action=newreply&threadid='+threadid
     cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
