@@ -45,9 +45,9 @@ class Terminal(BlessedTerminal):
             return True
         return False
 
-    def getch(self):
+    def getch(self, wait=0):
         from x84.bbs import getsession
-        val = getsession().read_event('input')
+        val = getsession().read_event('input', wait)
         return self._keyboard_decoder.decode(val, final=False)
 
     def _height_and_width(self):
