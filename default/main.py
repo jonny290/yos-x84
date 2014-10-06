@@ -110,6 +110,8 @@ def main():
             goto('logoff')
         elif inp == u'!':
             gosub('charset')
+        elif inp == u'y':
+            gosub('yosindex')
         elif inp == '\x1f' and 'sysop' in session.user.groups:
             # ctrl+_, run a debug script
             gosub('debug')

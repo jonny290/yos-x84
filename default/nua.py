@@ -72,6 +72,23 @@ def set_location(user):
         user.location = u''
 
 
+def set_sacookies(user):
+    """
+    set SA cookies
+    """
+    from x84.bbs import getterminal, echo, ini, LineEditor
+    term = getterminal()
+    prompt_sausercookie = u'SA \'user\' cookie data: '
+    echo(u'\r\n' + term.clear_eol + term.normal + prompt_sausercookie)
+    user['sausercookie'] = LineEditor(50, user['sausercookie']).read()
+    if user['sausercookie'] is None:
+        user['sausercookie'] = u''
+    prompt_sapasscookie = u'SA \'password\' cookie data: '
+    echo(u'\r\n' + term.clear_eol + term.normal + prompt_sapasscookie)
+    user['sapasscookie'] = LineEditor(50, user['sapasscookie']).read()
+    if user['sapasscookie'] is None:
+        user['sapasscookie'] = u''
+ 
 def set_email(user):
     """
     Prompt for and set user.email, may be empty
@@ -190,6 +207,7 @@ def main(handle=u''):
         set_location(user)
         set_email(user)
         set_password(user)
+        set_sacookies(user)
         if prompt_ok():
             user.save()
             goto(topscript, user.handle)
