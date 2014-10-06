@@ -1,4 +1,5 @@
 
+
 ABOUT_DOT_PLAN = (u'The .plan file is a throwback to early Unix '
                   + u'"blogosphere", this is a simple file that is '
                   + u'GLOBALLY shared with all other users. You can '

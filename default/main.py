@@ -12,12 +12,7 @@ def refresh():
     session, term = getsession(), getterminal()
     session.activity = u'Main menu'
     artfile = os.path.join(os.path.dirname(__file__), 'art', 'main.asc')
-    echo(u''.join((
-        u'\r\n\r\n',
-        term.blue(u'/'.rjust(term.width / 2)), term.bold_black(u'/ '),
-        term.bold('x'), term.bold_blue('/'), term.bold('84'), u' ',
-        'MAiN MENU',
-        u'\r\n')))
+    echo(term.clear())
     for line in showcp437(artfile):
         echo(line)
     echo(u'\r\n\r\n')
@@ -55,11 +50,11 @@ def refresh():
             u'  '))
         ansilen = len(Ansi(buf_str + out_str))
         if ansilen >= (term.width * .8):
-            echo(Ansi(buf_str).center(term.width) + u'\r\n\r\n')
+            echo(Ansi(buf_str).center(term.width) + u'\r\n')
             buf_str = out_str
         else:
             buf_str += out_str
-    echo(Ansi(buf_str).center(term.width) + u'\r\n\r\n')
+    echo(Ansi(buf_str).center(term.width) + u'\r\n')
     echo(u' [%s]:' % (
         term.blue_underline(''.join([key for key, name in entries]))))
 

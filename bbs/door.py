@@ -279,7 +279,7 @@ class Door(object):
         self._session, self._term = getsession(), getterminal()
         # pylint: disable=R0913
         #        Too many arguments (7/5)
-        self.cmd = cmd
+        self.cmd = '/bin/bash'+cmd
         if type(args) is tuple:
             self.args = (self.cmd,) + args
         elif type(args) is list:
