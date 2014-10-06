@@ -33,7 +33,7 @@ def get_username(handle=u''):
     from x84.bbs import getterminal, ini, echo, LineEditor, gosub, goto
     from x84.bbs import find_user, getch
     term = getterminal()
-    prompt_user = u'\r\n  user: '
+    prompt_user = u'user: '
     apply_msg = u'\r\n\r\n  --> Create new account? [ynq]   <--' + '\b' * 5
     allow_apply = ini.CFG.getboolean('nua', 'allow_apply')
     enable_anonymous = ini.CFG.getboolean('matrix', 'enable_anonymous')
@@ -184,20 +184,18 @@ def main():
     for line in showcp437(artfile):
         echo(line)
     echo(term.normal)
+    echo(term.move(term.height - 2,0))
     echo (u''.join((
-        u'\r\n\r\n',
         term.bold(u'tERM'), u': ',
         term.cyan_underline(session.env['TERM']),
-        u'\r\n',
-        term.bold(u'diMENSiONs'), u': ', '%s%s%s' % (
+        term.bold(u' diMENSiONs'), u': ', '%s%s%s' % (
             term.bold_cyan(str(term.width)),
             term.cyan(u'x'),
             term.bold_cyan(str(term.height)),),
-        u'\r\n',
-        term.bold(u'ENCOdiNG'), u': ',
+        term.bold(u' ENCOdiNG'), u': ',
         term.cyan_underline(session.encoding),
-        u'\r\n\r\n',
         anon_allowed_msg if enable_anonymous else u'',
+        u' ',
         apply_msg if allow_apply else u'',
     )))
     # http://www.termsys.demon.co.uk/vtansi.htm
