@@ -151,6 +151,7 @@ def main():
     from x84.bbs import getsession, getterminal, ini, echo, get_user, goto
     from x84.bbs import find_user, showcp437
     from x84.engine import __url__ as url
+    import random, time, glob
     logger = logging.getLogger()
     session, term = getsession(), getterminal()
     session.activity = u'Logging in'
@@ -167,7 +168,9 @@ def main():
     enable_anonymous = ini.CFG.getboolean('matrix', 'enable_anonymous')
     enable_pwreset = ini.CFG.getboolean('matrix', 'enable_pwreset')
     bbsname = ini.CFG.get('system', 'bbsname')
-    artfile = os.path.join(os.path.dirname(__file__), 'art', 'xz-1984.ans')
+    headers = glob.glob(os.path.join(os.path.dirname(__file__),"art","YOSBBS*.ANS"))
+    bannername = "YOSBBS"+str(random.randrange(1,len(headers))).zfill(2)+".ANS"
+    artfile = os.path.join(os.path.dirname(__file__), 'art', bannername)
     topscript = ini.CFG.get('matrix', 'topscript')
     max_tries = 10
     session.flush_event('refresh')
@@ -176,6 +179,8 @@ def main():
     echo(u''.join((
         term.normal, u'\r\n',
         u'Connected to %s, see %s for source\r\n' % (bbsname, url),)))
+    time.sleep(1) 
+    echo(term.clear())
     for line in showcp437(artfile):
         echo(line)
     echo(term.normal)
