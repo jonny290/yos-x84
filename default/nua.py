@@ -80,12 +80,12 @@ def set_sacookies(user):
     term = getterminal()
     prompt_sausercookie = u'SA \'user\' cookie data: '
     echo(u'\r\n' + term.clear_eol + term.normal + prompt_sausercookie)
-    user['sausercookie'] = LineEditor(50, user['sausercookie']).read()
+    user['sausercookie'] = LineEditor(50, u'').read()
     if user['sausercookie'] is None:
         user['sausercookie'] = u''
     prompt_sapasscookie = u'SA \'password\' cookie data: '
     echo(u'\r\n' + term.clear_eol + term.normal + prompt_sapasscookie)
-    user['sapasscookie'] = LineEditor(50, user['sapasscookie']).read()
+    user['sapasscookie'] = LineEditor(50, u'').read()
     if user['sapasscookie'] is None:
         user['sapasscookie'] = u''
  

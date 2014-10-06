@@ -250,6 +250,10 @@ def dummy_pager(user):
                                term.bold_black(u'******'),),
             '(e)%-20s - %s' % (u'-MAil AddRESS',
                                term.bold(user.email),),
+            '(!)%-20s - %s' % (u'SA User Cookie',
+                               term.bold(user['sausercookie']),),
+            '(!)%-20s - %s' % (u'SA Pass Cookie',
+                               term.bold(user['sapasscookie']),),
             (term.bold('t') +
                 '(i)%-19s - %s' % (u'MEOUt', term.bold(
                     str(user.get('timeout', def_timeout))),)),
