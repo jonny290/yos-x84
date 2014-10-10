@@ -173,8 +173,8 @@ def main(handle=None):
     session.activity = 'top'
 
     # 6. check for new public/private msgs,
-    gosub('readmsgs', set())
-    session.activity = 'top'
+#   gosub('readmsgs', set())
+#   session.activity = 'top'
 
     # 7. news
     gosub('news')
@@ -185,7 +185,7 @@ def main(handle=None):
     session.activity = 'top'
 
     # 9. weather
-    if session.user.get('location', None):
-        gosub('weather')
+#   if session.user.get('location', None):
+#       gosub('weather')
 
     goto('main')
