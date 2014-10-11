@@ -1,33 +1,31 @@
 """
 Door package for x/84 BBS http://github.com/jquast/x84
 """
-import resource
-import termios
 import logging
 import select
 import codecs
 import struct
+import shlex
 import time
-import fcntl
-import pty
 import sys
 import os
 import re
 
+
 class Dropfile(object):
     (DOORSYS, DOOR32, CALLINFOBBS, DORINFO) = range(4)
-    DOORSYS_GM = 'GR' # graphics mode
+    DOORSYS_GM = 'GR'  # graphics mode
 
     def __init__(self, filetype=None):
         assert filetype in (self.DOORSYS, self.DOOR32,
-                self.CALLINFOBBS, self.DORINFO)
+                            self.CALLINFOBBS, self.DORINFO)
         self.filetype = filetype
 
     def save(self, folder):
         """ Save dropfile to folder """
-        fp = codecs.open(os.path.join(folder, self.filename), 'w', 'ascii', 'replace')
-        fp.write(self.__str__())
-        fp.close()
+        f_path = os.path.join(folder, self.filename)
+        with codecs.open(f_path, 'w', 'ascii', 'replace') as out_p:
+            out_p.write(self.__str__())
 
     @property
     def node(self):
@@ -43,8 +41,8 @@ class Dropfile(object):
     def fullname(self):
         from x84.bbs import getsession
         return '%s %s' % (
-                getsession().user.handle,
-                getsession().user.handle,)
+            getsession().user.handle,
+            getsession().user.handle,)
 
     @property
     def securitylevel(self):
@@ -59,14 +57,14 @@ class Dropfile(object):
     @property
     def lastcall_date(self):
         from x84.bbs import getsession
-        return time.strftime('%m/%d/%y',
-                time.localtime(getsession().user.lastcall))
+        return time.strftime(
+            '%m/%d/%y', time.localtime(getsession().user.lastcall))
 
     @property
     def lastcall_time(self):
         from x84.bbs import getsession
-        return time.strftime('%H:%M',
-                time.localtime(getsession().user.lastcall))
+        return time.strftime(
+            '%H:%M', time.localtime(getsession().user.lastcall))
 
     @property
     def time_used(self):
@@ -91,11 +89,11 @@ class Dropfile(object):
 
     @property
     def comtype(self):
-        return 0 ## Line 1 : Comm type (0=local, 1=serial, 2=telnet)
+        return 0  # Line 1 : Comm type (0=local, 1=serial, 2=telnet)
 
     @property
     def comhandle(self):
-        return 0 ## Line 2 : Comm or socket handle
+        return 0  # Line 2 : Comm or socket handle
 
     @property
     def parity(self):
@@ -117,7 +115,7 @@ class Dropfile(object):
 
     @property
     def xferprotocol(self):
-        return 'X' # x-modem for now, we don't have any xfer code/prefs
+        return 'X'  # x-modem for now, we don't have any xfer code/prefs
 
     @property
     def usernum(self):
@@ -155,101 +153,143 @@ class Dropfile(object):
             else:
                 nodeid = chr(ord('a') + (self.node - 11))
                 assert ord(nodeid) <= ord('z')
-            return 'DORINFO%s.DEF' % (nodeid,)
+            return 'DORINFO{0}.DEF'.format(nodeid)
         else:
             raise ValueError('filetype is unknown')
 
     def __str__(self):
-        if self.filetype == self.DOORSYS:
-            return self.get_doorsys()
-        elif self.filetype == self.DOOR32:
-            return self.get_door32()
-        elif self.filetype == self.CALLINFOBBS:
-            return self.get_callinfo()
-        elif self.filetype == self.DORINFO:
-            return self.get_dorinfo()
-        else:
-            raise ValueError('filetype is unknown')
+        method = {
+            self.DOORSYS: self.get_doorsys,
+            self.DOOR32: self.get_door32,
+            self.CALLINFOBBS: self.get_callinfo,
+            self.DORINFO: self.get_dorinfo,
+        }.get(self.filetype)
+        if method is None:
+            raise ValueError('filetype {0} is unknown: '.format(method))
+        return method()
 
     def get_doorsys(self):
-        return (u'%s:\r\n%d\r\n'  # comport, comspeed
-                '%d\r\n%d\r\n'  # parity, node
-                '%d\r\nY\r\n'  # comspeed, screen?
-                'Y\r\nY\r\nY\r\n'  # printer? pager alarm? caller alarm?
-                '%s\r\n%s\r\n'  # fullname, location
-                '123-456-7890\r\n123-456-7890\r\n'  # phone numbers
-                '%s\r\n%d\r\n%d\r\n'  # password, security level, numcalls
-                '%s\r\n%d\r\n%d\r\n'  # lastcall, remaining (secs, mins)
-                'GR\r\n%d\r\nN\r\n'  # graphics mode, page length, expert mode
-                '1,2,3,4,5,6,7\r\n1\r\n'  # conferences, conf. sel, exp. date
-                '01/01/99\r\n'  # exp. date
-                '%s\r\n%s\r\n'  # user number, def. xfer protocol,
-                '0\r\n0\r\n'  # total #u/l, total #d/l
-                '0\r\n9999999\r\n'  # daily d/l limit return val/write val
-                '01/01/2001\r\n'  # birthdate
-                'C:\\XXX\r\nC:\\XXX\r\n'  # filepaths to bbs files ...
-                '%s\r\n%s\r\n'  # sysop's name, user's alias
-                '00:05\r\nY\r\n'  # "event time"?, error-correcting connection
-                'Y\r\nY\r\n'  # is ANSI in NG mode? Use record locking?
-                '7\r\n%d\r\n'  # default color .. time credits in minutes
-                '09/09/99\r\n%s\r\n'  # last new file scan, time of call,
-                '%s\r\n9999\r\n'  # time of last call, max daily files
-                '0\r\n0\r\n0\r\n' # files, u/l Kb, d/l Kb today
-                'None\r\n0\r\n0\n' # user comment, doors opened, msgs left
-                % (
-                    self.comport, self.comspeed, self.parity, self.node,
-                    self.comspeed, self.fullname, self.location,
-                    self.password, self.securitylevel, self.numcalls,
-                    self.lastcall_date, self.remaining_secs,
-                    self.remaining_mins, self.pageheight, self.usernum,
-                    self.xferprotocol, self.sysopname, self.alias,
-                    self.remaining_mins, self.lastcall_time,
-                    self.lastcall_time))
+        return (u'{s.comport}:\r\n'
+                u'{s.comspeed}\r\n'
+                u'{s.parity}\r\n'
+                u'{s.node}\r\n'
+                u'{s.comspeed}\r\n'
+                u'Y\r\n'                  # screen?
+                u'Y\r\n'                  # printer?
+                u'Y\r\n'                  # pager alarm?
+                u'Y\r\n'                  # caller alartm?
+                u'{s.fullname}\r\n'
+                u'{s.location}\r\n'
+                u'123-456-7890\r\n'       # phone number1
+                u'123-456-7890\r\n'       # phone number2
+                u'{s.password}\r\n'
+                u'{s.securitylevel}\r\n'
+                u'{s.numcalls}\r\n'
+                u'{s.lastcall_date}\r\n'
+                u'{s.remaining_secs}\r\n'
+                u'{s.remaining_mins}\r\n'
+                u'GR\r\n'                 # graphics mode
+                u'{s.pageheight}\r\n'
+                u'N\r\n'                  # expert mode?
+                u'1,2,3,4,5,6,7\r\n'      # conferences
+                u'1\r\n'                  # conf. sel, exp. date
+                u'01/01/99\r\n'           # exp. date
+                u'{s.usernum}\r\n'
+                u'{s.xferprotocol}\r\n'
+                u'0\r\n'                  # total num. uploads
+                u'0\r\n'                  # total num, downloads
+                u'0\r\n'                  # daily d/l limit
+                u'9999999\r\n'            # return val/write val
+                u'01/01/2001\r\n'         # birthdate
+                u'C:\\XXX\r\n'            # filepaths to bbs files ...
+                u'C:\\XXX\r\n'            # filepaths to bbs files ...
+                u'{s.sysopname}\r\n'      # sysop's name
+                u'{s.alias}\r\n'          # user's alias
+                u'00:05\r\n'              # event time(?)
+                u'Y\r\n'                  # error-correcting connection
+                u'Y\r\n'                  # is ANSI in NG mode?
+                u'Y\r\n'                  # use record locking?
+                u'7\r\n'                  # default color ..
+                u'{s.remaining_mins}\r\n'
+                u'09/09/99\r\n'           # last new file scan,
+                u'{s.lastcall_time}\r\n'  # time of this call
+                u'{s.lastcall_time}\r\n'  # time of last call
+                u'9999\r\n'               # max daily files
+                u'0\r\n'                  # num. files today
+                u'0\r\n'                  # u/l Kb today
+                u'0\r\n'                  # d/l Kb today
+                u'None\r\n'               # user comment
+                u'0\r\n'                  # doors opened
+                u'0\n'                    # msgs left
+                .format(s=self))
 
     def get_door32(self):
-        return (u'%d\r\n%d\r\n%d\r\n'  # comm type, handle, speed
-                '%s\r\n%d\r\n%s\r\n'  # system name, user num, real name
-                '%s\r\n%d\r\n%d\r\n'  # alias, security level, mins remain,
-                '1\r\n%d\n'  # emulation ('ansi'), current node num,
-                % (
-                    self.comtype, self.comhandle, self.comspeed,
-                    self.systemname, self.usernum, self.fullname,
-                    self.alias, self.securitylevel, self.remaining_mins,
-                    self.node))
+        return (u'{s.comtype}\r\n'
+                u'{s.comhandle}\r\n'
+                u'{s.comspeed}\r\n'
+                u'{s.systemname}\r\n'
+                u'{s.usernum}\r\n'
+                u'{s.fullname}\r\n'
+                u'{s.alias}\r\n'
+                u'{s.securitylevel}\r\n'
+                u'{s.remaining_mins}\r\n'
+                u'1\r\n'                  # emulation (1=ansi)
+                u'{s.node}\n'
+                .format(s=self))
+
     def get_callinfo(self):
-        return (u'%s\r\n%d\r\n%s\r\n'  # user name, comspeed, location
-                '%d\r\n%d\r\nCOLOR\r\n' # security level, mins remain, ansi?
-                '%s\r\n%d\r\n%d\r\n'  # password, usernum, time_used,
-                '01:23\r\n01:23 01/02/90\r\n'
-                'ABCDEFGH\r\n0\r\n'
-                '99\r\n0\r\n'
-                '9999\r\n'  # 7 unknown fields,
-                '123-456-7890\r\n01/01/90 02:34\r\n' # phone, unknown
-                'NOVICE\r\n%s\r\n'  # expert mode, xfer protocol
-                '01/01/90\r\n%d\r\n' # unknown, number of calls,
-                '%d\r\n0\r\n' # lines per screen, ptr to new msgs?
-                '0\r\n0\r\n' # total u/l, d/l
-                '8  { Databits }\r\n' #  who knows
-                'REMOTE\r\n%s\r\n' # LOCAL|REMOTE, comport,
-                '%d\r\nFALSE\r\n' # comspeed, unknown,
-                'Normal Connection\r\n' # unknown,
-                '01/02/94 01:20\r\n0\r\n1\n' # unknown, "task #", "door #"
-                % (self.alias, self.comspeed, self.location,
-                    self.securitylevel, self.remaining_mins, self.password,
-                    self.usernum, self.time_used, self.xferprotocol,
-                    self.numcalls, self.pageheight, self.comport, self.comspeed, ))
+        return (u'{s.alias}\r\n'
+                u'{s.comspeed}\r\n'
+                u'{s.location}\r\n'
+                u'{s.securitylevel}\r\n'
+                u'{s.remaining_mins}\r\n'
+                u'COLOR\r\n'              # COLOR=ansi
+                u'{s.password}\r\n'
+                u'{s.usernum}\r\n'
+                u'{s.time_used}\r\n'
+                u'01:23\r\n'              # 1
+                u'01:23 01/02/90\r\n'     # ..
+                u'ABCDEFGH\r\n'           # ..
+                u'0\r\n'                  # ..
+                u'99\r\n'                 # ..
+                u'0\r\n'                  # ..
+                u'9999\r\n'               # 7 unknown fields,
+                u'123-456-7890\r\n'       # phone number
+                u'01/01/90 02:34\r\n'     # unknown date/time
+                u'NOVICE\r\n'             # expert mode (off)
+                u'{s.xferprotocol}\r\n'
+                u'01/01/90\r\n'           # unknown date
+                u'{s.numcalls}\r\n'
+                u'{s.pageheight}\r\n'
+                u'0\r\n'                  # ptr to new msgs?
+                u'0\r\n'                  # total u/l
+                u'0\r\n'                  # total d/l
+                u'8  { Databits }\r\n'    #  ?? like 8,N,1 ??
+                u'REMOTE\r\n'             # local or remote?
+                u'{s.comport}\r\n'
+                u'{s.comspeed}\r\n'
+                u'FALSE\r\n'              # unknown,
+                u'Normal Connection\r\n'  # unknown,
+                u'01/02/94 01:20\r\n'     # unknown date/time
+                u'0\r\n'                  # task #
+                u'1\n'                    # door #
+                .format(s=self))
 
     def get_dorinfo(self):
-        return (u'%s\r\n%s\r\n%s\r\n' # software, sysop fname, sysop lname,
-                '%s\r\n%d\r\n0\r\n'  # com port, bps, "networked"?
-                '%s\r\n%s\r\n%s\r\n' # user fname, user lname, user location
-                '1\r\n%d\r\n%d\r\n' # term (ansi), security level, mins remain
-                '-1\n'  # fossil (-1 = "using external serial driver"..)
-                % (
-                    self.systemname, self.sysopname, self.sysopname,
-                    self.comport, self.comspeed,
-                    self.alias, self.alias, self.location,
-                    self.securitylevel, self.remaining_mins,))
+        return (u'{s.systemname}\r\n'
+                u'{s.sysopname}\r\n'     # sysop f.name
+                u'{s.sysopname}\r\n'     # sysop l.name
+                u'{s.comport}\r\n'
+                u'{s.comspeed}\r\n'
+                u'0\r\n'                 # "networked"?
+                u'{s.alias}\r\n'         # user f.name
+                u'{s.alias}\r\n'         # user l.name
+                u'{s.location}\r\n'
+                u'1\r\n'                 # term (1=ansi)
+                u'{s.securitylevel}\r\n'
+                u'{s.remaining_mins}\r\n'
+                u'-1\n'                   # fossil (-1=external)
+                .format(s=self))
 
 
 class Door(object):
@@ -265,7 +305,8 @@ class Door(object):
     master_fd = None
 
     def __init__(self, cmd='/bin/uname', args=(), env_lang='en_US.UTF-8',
-                 env_term=None, env_path=None, env_home=None, cp437=False):
+                 env_term=None, env_path=None, env_home=None, cp437=False,
+                 env=None):
         # pylint: disable=R0913
         #        Too many arguments (7/5)
         """
@@ -279,13 +320,13 @@ class Door(object):
         self._session, self._term = getsession(), getterminal()
         # pylint: disable=R0913
         #        Too many arguments (7/5)
-        self.cmd = '/bin/bash'+cmd
+        self.cmd = cmd
         if type(args) is tuple:
             self.args = (self.cmd,) + args
         elif type(args) is list:
             self.args = [self.cmd,] + args
         else:
-            raise ValueError, 'args must be tuple or list'
+            raise ValueError('args must be tuple or list')
         self.env_lang = env_lang
         if env_term is None:
             self.env_term = self._session.env.get('TERM')
@@ -299,7 +340,7 @@ class Door(object):
             self.env_home = os.getenv('HOME')
         else:
             self.env_home = env_home
-        self.env = None # add additional env variables ...
+        self.env = env or {}
         self.cp437 = cp437
         self._utf8_decoder = codecs.getincrementaldecoder('utf8')()
 
@@ -309,17 +350,28 @@ class Door(object):
         calls execvpe() while the parent process pipes telnet session
         IPC data to and from the slave pty until child process exits.
         """
-        logger = logging.getLogger()
-        env = dict() if self.env is None else self.env
-        env.update({'LANG': self.env_lang,
-               'TERM': self.env_term,
-               'PATH': self.env_path,
-               'HOME': self.env_home,
-               'LINES': '%s' % (self._term.height,),
-               'COLUMNS': '%s' % (self._term.width,)})
-        logger.debug('os.execvpe(cmd=%r, args=%r, env=%r',
-                self.cmd, self.args, env)
         try:
+            import termios
+            import fcntl
+            import pty
+        except ImportError, err:
+            raise OSError('door support not (yet) supported on {0} platform.'
+                          .format(sys.platform.lower()))
+
+        logger = logging.getLogger()
+        env = self.env.copy()
+        env.update({'LANG': self.env_lang,
+                    'TERM': self.env_term,
+                    'PATH': self.env_path,
+                    'HOME': self.env_home,
+                    'LINES': str(self._term.height),
+                    'COLUMNS': str(self._term.width),
+                    })
+        logger.debug('os.execvpe(cmd={self.cmd}, args={self.args}, '
+                     'env={self.env}'.format(self=self))
+        try:
+            # on Solaris we would need to use something like I've done
+            # in pexpect project, a custom pty fork implementation.
             pid, self.master_fd = pty.fork()
         except OSError, err:
             # too many open files, out of memory, no such file/directory
@@ -330,17 +382,21 @@ class Door(object):
         if pid == pty.CHILD:
             sys.stdout.flush()
             # send initial screen size
-            fcntl.ioctl(sys.stdout.fileno(), termios.TIOCSWINSZ,
-                        struct.pack('HHHH',
-                            self._term.height, self._term.width, 0, 0))
+            _bytes = struct.pack('HHHH',
+                                 self._term.height,
+                                 self._term.width,
+                                 0, 0)
+            fcntl.ioctl(sys.stdout.fileno(), termios.TIOCSWINSZ, _bytes)
             # we cannot log an exception, only print to stderr and have
             # it captured by the parent process; this is because our 'logger'
             # instance is dangerously forked, and any attempt to communicate
             # with multiprocessing pipes, loggers, etc. will cause the value
             # and state of many various file descriptors to become corrupted
             try:
-                os.execvpe(self.cmd, self.args, env)
-            except Exception as err:
+                #os.execvpe(self.cmd, self.args, env)
+                #os.execvpe('/usr/bin/dosemu', ['-I', '\'$_com1 = \"virtual\"\'', '-E', 'CALL d:\\doors\\lord2\\START.BAT 9',], env)
+                os.execvpe('/usr/bin/dosemu', ['-E', 'CALL d:\\doors\\lord2\\START.BAT 9',], env)
+            except OSError as err:
                 sys.stderr.write('%s\n' % (err,))
             os._exit(1)
 
@@ -376,34 +432,38 @@ class Door(object):
         constructor, convert to utf8 glyphs using cp437 encoding; otherwise
         decode output as utf8. """
         from x84.bbs.cp437 import CP437
-        
-        if self.cp437:
-            return u''.join((CP437[ord(ch)] for ch in data))
 
-        decoded = list()
-        for num, byte in enumerate(data):
-            final = ((num + 1) == len(data)
-                     and not self._masterfd_isready())
-            ucs = self._utf8_decoder.decode(byte, final)
-            if ucs is not None:
-                decoded.append(ucs)
-        return u''.join(decoded)
+        #if self.cp437:
+        return u''.join((CP437[ord(ch)] for ch in data))
+
+        #decoded = list()
+        #for num, byte in enumerate(data):
+        #    final = ((num + 1) == len(data)
+        #             and not self._masterfd_isready())
+        #    ucs = self._utf8_decoder.decode(byte, final)
+        #    if ucs is not None:
+        #        decoded.append(ucs)
+        #return u''.join(decoded)
 
     def _masterfd_isready(self):
         """
         returns True if bytes waiting on master fd, meaning
         this utf8 byte must really be the last for a while.
         """
-        return self.master_fd != -1 and (self.master_fd in
-                select.select([self.master_fd, ], (), (), 0)[0])
+        return self.master_fd != -1 and (
+            self.master_fd in select.select([self.master_fd, ], (), (), 0)[0])
 
     def resize(self):
+        import termios
+        import fcntl
         logger = logging.getLogger()
         logger.debug('send TIOCSWINSZ: %dx%d',
                      self._term.width, self._term.height)
-        fcntl.ioctl(self.master_fd, termios.TIOCSWINSZ,
-                    struct.pack('HHHH',
-                        self._term.height, self._term.width, 0, 0))
+        _bytes = struct.pack('HHHH',
+                             self._term.height,
+                             self._term.width,
+                             0, 0)
+        fcntl.ioctl(self.master_fd, termios.TIOCSWINSZ, _bytes)
 
     def _loop(self):
         # pylint: disable=R0914
@@ -412,7 +472,6 @@ class Door(object):
         Poll input and outpout of ptys,
         """
         from x84.bbs import echo
-        from x84.bbs.cp437 import CP437
         logger = logging.getLogger()
         while True:
             # block up to self.time_opoll for screen output
@@ -465,41 +524,40 @@ class DOSDoor(Door):
     remove such sequence, and input_filter which only allows input after a
     few seconds have passed.
     """
-    RE_REPWITH_CLEAR = (
-            r'\033\[('
-                r'1;80H.*\033\[1;1H'
-                r'|H\033\[2J'
-                r'|\d+;1H.*\033\[1;1H'
-                r')')
-    RE_REPWITH_NONE = (
-            r'\033\[('
-            r'6n'
-            r'|\?1049[lh]'
-            r'|\d+;\d+r'
-            r'|1;1H\033\[\dM)')
+    RE_REPWITH_CLEAR = (r'\033\[('
+                        r'1;80H.*\033\[1;1H'
+                        r'|H\033\[2J'
+                        r'|\d+;1H.*\033\[1;1H'
+                        r')')
+    RE_REPWITH_NONE = (r'\033\[('
+                       r'6n'
+                       r'|\?1049[lh]'
+                       r'|\d+;\d+r'
+                       r'|1;1H\033\[\dM)')
     START_BLOCK = 4.0
 
     def __init__(self, cmd='/bin/uname', args=(), env_lang='en_US.UTF-8',
                  env_term=None, env_path=None, env_home=None, cp437=False):
-        Door.__init__(self, cmd, args,
-                env_lang, env_term, env_path, env_home, cp437)
+        Door.__init__(self, cmd, args, env_lang, env_term,
+                      env_path, env_home, cp437)
         self.check_winsize()
         self._stime = time.time()
-        self._re_trim_clear = re.compile(self.RE_REPWITH_CLEAR, flags=re.DOTALL)
-        self._re_trim_none = re.compile(self.RE_REPWITH_NONE, flags=re.DOTALL)
-        self._replace_clear = (
-                self._term.move(25, 0)
-                + (u'\r\n' * 25)
-                + self._term.home)
+        self._re_trim_clear = re.compile(self.RE_REPWITH_CLEAR,
+                                         flags=re.DOTALL)
+        self._re_trim_none = re.compile(self.RE_REPWITH_NONE,
+                                        flags=re.DOTALL)
+        self._replace_clear = u''.join((self._term.move(25, 0),
+                                        (u'\r\n' * 25),
+                                        self._term.home))
 
     def output_filter(self, data):
         data = Door.output_filter(self, data)
         if self._stime is not None and (
                 time.time() - self._stime < self.START_BLOCK):
             data = re.sub(pattern=self._re_trim_clear,
-                    repl=(self._replace_clear), string=data)
+                          repl=(self._replace_clear), string=data)
             data = re.sub(pattern=self._re_trim_none,
-                    repl=u'\r\n', string=data)
+                          repl=u'\r\n', string=data)
         return data
 
     def input_filter(self, data):
@@ -507,13 +565,13 @@ class DOSDoor(Door):
 
     def check_winsize(self):
         assert self._term.width >= 80, (
-                'Terminal width must be greater than '
-                '80 columns (IBM-PC dimensions). '
-                'Please resize your window.')
+            'Terminal width must be greater than '
+            '80 columns (IBM-PC dimensions). '
+            'Please resize your window.')
         assert self._term.height >= 25, (
-                'Terminal height must be greater than '
-                '25 rows (IBM-PC dimensions). '
-                'Please resize your window.')
+            'Terminal height must be greater than '
+            '25 rows (IBM-PC dimensions). '
+            'Please resize your window.')
 
     def resize(self):
         pass
@@ -542,3 +600,216 @@ class DOSDoor(Door):
         # also, fight against 'set scrolling region' by resetting, LORD
         # contains, for example: \x1b[3;22r after 'E'nter the realm :-(
         echo(u"\x1b[r")
+
+
+def launch(dos=None, cp437=True, drop_type=None,
+           drop_folder=None, name=None, args='',
+           forcesize=None, activity=None, command=None,
+           nodes=None, forcesize_func=None, env_term=None):
+    """
+    helper function for launching doors with inline configuration
+    also handles resizing of screens and virtual node pools
+
+    the forcesize_func may be overridden if the sysop wants to use
+    their own function for presenting the screen resize prompt.
+
+    virtual node pools are per-door, based on the 'name' argument, up
+    to a maximum determined by the 'nodes' argument.
+    name='Netrunner' nodes=4 would mean that the door, Netrunner, has
+    a virtual node pool with 4 possible nodes in it. When 4 people
+    are already playing the game, additional users will be notified
+    that there are no nodes available for play until one of them is
+    released.
+
+    for DOS doors, the [dosemu] section of default.ini is used for
+    defaults::
+
+        default.ini
+        ---
+        [dosemu]
+        bin = /usr/bin/dosemu
+        home = /home/bbs
+        path = /usr/bin:/usr/games:/usr/local/bin
+        opts = -u virtual -f /home/bbs/dosemu.conf -o /home/bbs/dosemu%%#.log %%c 2> /home/bbs/dosemu_boot%%#.log
+        dropdir = /home/bbs/dos
+        nodes = 4
+
+    in 'opts', %%# becomes the virtual node number, %%c becomes the 'command'
+    argument.
+
+    'dropdir' is where dropfiles will be created if unspecified. you can
+    give each door a dropdir for each node if you like, for ultimate
+    compartmentalization -- just set the 'dropdir' argument when calling
+    this function.
+
+    -u virtual can be used to add a section to your dosemu.conf for
+    virtualizing the com port (which allows you to use the same dosemu.conf
+    locally by omitting '-u virtual')::
+
+        dosemu.conf
+        ---
+        $_cpu = (80386)
+        $_hogthreshold = (20)
+        $_layout = "us"
+        $_external_charset = "utf8"
+            $_internal_charset = "cp437"
+        $_term_update_freq = (4)
+        $_rdtsc = (on)
+        $_cpuspeed = (166.666)
+        ifdef u_virtual
+                $_com1 = "virtual"
+        endif
+    """
+    from x84.bbs import getsession, getterminal, echo, ini
+
+    session, term = getsession(), getterminal()
+    logger = logging.getLogger()
+    echo(term.clear)
+
+    with term.fullscreen():
+        store_rows, store_cols = None, None
+
+        if env_term is None:
+            env_term = session.env['TERM']
+
+        strnode = None
+        (dosbin, doshome, dospath, dosopts, dosdropdir, dosnodes) = (
+            ini.CFG.get('dosemu', 'bin'),
+            ini.CFG.get('dosemu', 'home'),
+            ini.CFG.get('dosemu', 'path'),
+            ini.CFG.get('dosemu', 'opts'),
+            ini.CFG.get('dosemu', 'dropdir'),
+            ini.CFG.getint('dosemu', 'nodes'))
+
+        if drop_folder is not None and drop_type is None:
+            drop_type = 'DOORSYS'
+
+        if drop_type is not None and drop_folder is None:
+            drop_folder = dosdropdir
+
+        if drop_folder or drop_type:
+            assert name is not None, (
+                'name required for door using node pools')
+
+            for node in range(nodes if nodes != None else dosnodes):
+                event = 'lock-%s/%d' % (name, node)
+                session.send_event(event, ('acquire', None))
+                data = session.read_event(event)
+
+                if data is True:
+                    strnode = str(node + 1)
+                    break
+
+            if strnode is None:
+                logger.warn('No virtual nodes left in pool: %s', name)
+                echo(term.bold_red(u'This door is currently at maximum '
+                                   u'capacity. Please try again later.'))
+                term.inkey(3)
+                return
+
+            logger.info('Requisitioned virtual node %s-%s', name, strnode)
+            dosopts = dosopts.replace('%#', strnode)
+            dosdropdir = dosdropdir.replace('%#', strnode)
+            drop_folder = drop_folder.replace('%#', strnode)
+            args = args.replace('%#', strnode)
+
+        try:
+            if dos is not None or forcesize is not None:
+                if forcesize is None:
+                    forcesize = [80, 25]
+                else:
+                    assert len(forcesize) == 2, forcesize
+
+                want_cols, want_rows = forcesize
+
+                if want_cols != term.width or want_rows != term.height:
+                    store_cols, store_rows = term.width, term.height
+                    echo(u'\x1b[8;%d;%dt' % (want_rows, want_cols,))
+                    term.inkey(timeout=0.25)
+
+                dirty = True
+
+                if not (term.width == want_cols and term.height == want_rows):
+                    if forcesize_func is not None:
+                        forcesize_func()
+                    else:
+                        while not (term.width == want_cols and
+                                   term.height == want_rows):
+                            if session.poll_event('refresh'):
+                                dirty = True
+
+                            if dirty:
+                                dirty = False
+                                echo(term.clear)
+                                echo(term.bold_cyan(
+                                    u'o' + (u'-' * (forcesize[0] - 2))
+                                    + u'>\r\n'
+                                    + (u'|\r\n' * (forcesize[1] - 2))))
+                                echo(u''.join(
+                                    (term.bold_cyan(u'V'),
+                                     term.bold(u' Please resize your screen '
+                                               u'to %sx%s and/or press ENTER '
+                                               u'to continue' % (want_cols,
+                                                                 want_rows)))))
+
+                            ret = term.inkey(timeout=0.25)
+
+                            if ret in (term.KEY_ENTER, u'\r', u'\n'):
+                                break
+
+                if term.width != want_cols or term.height != want_rows:
+                    echo(u'\r\nYour dimensions: %s by %s; '
+                         u'emulating %s by %s' % (term.width, term.height,
+                                                  want_cols, want_rows,))
+
+                    # hand-hack, its ok ... really
+                    store_cols, store_rows = term.width, term.height
+                    term.columns, term.rows = want_cols, want_rows
+                    term.inkey(timeout=2)
+
+            if activity is not None:
+                session.activity = activity
+            elif name is not None:
+                session.activity = 'Playing %s' % name
+            else:
+                session.activity = 'Playing a door game'
+
+            if drop_folder is not None:
+                if not os.path.isabs(drop_folder):
+                    #drop_folder = os.path.join(dosdropdir, drop_folder)
+                    drop_folder = '/mystic/doors/lord2/'
+
+                Dropfile(getattr(Dropfile, drop_type)).save(drop_folder)
+
+            door = None
+
+            if dos is not None:
+                cmd = None
+
+                if command != None:
+                    cmd = command
+                else:
+                    cmd = dosbin
+                    args = dosopts.replace('%c', '"' + args + '"')
+
+                door = DOSDoor(cmd, shlex.split(args), cp437=True,
+                               env_home=doshome, env_path=dospath,
+                               env_term=env_term)
+            else:
+                door = Door(command, shlex.split(args), cp437=cp437,
+                            env_term=env_term)
+
+            door.run()
+        except:
+            raise
+        finally:
+            if store_rows != None and store_cols != None:
+                term.rows, term.columns = store_rows, store_cols
+                echo(u'\x1b[8;%d;%dt' % (store_rows, store_cols,))
+                term.inkey(timeout=0.25)
+
+            if name is not None and drop_type:
+                session.send_event(
+                    event='lock-%s/%d' % (name, int(strnode) - 1),
+                    data=('release', None))
+                logger.info('Released virtual node %s-%s', name, strnode)
