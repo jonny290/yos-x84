@@ -192,7 +192,7 @@ def prompt_tags(tags):
 
 
 
-def read_messages(msgs, title, currentpage, totalpages, threadid):
+def read_messages(msgs, title, currentpage, totalpages, threadid, cachetime):
     """
     Provide message reader UI given message list ``msgs``,
     with new messages in list ``new``.
@@ -306,7 +306,7 @@ def read_messages(msgs, title, currentpage, totalpages, threadid):
 #       return ucs
 
     def get_selector_title(mbox):
-        return "YOSPOS"
+        return cachetime
 
     def get_selector_footer(currentpage, totalpages):
         return 'Page '+currentpage+'/'+totalpages 
@@ -346,7 +346,7 @@ def read_messages(msgs, title, currentpage, totalpages, threadid):
         sel_padd_left = padd_attr(
             selector.glyphs['bot-horiz'] * 3)
         idx = selector.selection[0]
-        return u''.join((term.move(0, 0), term.clear, u'\r\n',
+        return u''.join((term.move(0, 0), term.clear, u'\r\n',cachetime,
                          u'// REAdiNG MSGS ..'.center(term.width).rstrip(),
                          selector.refresh(),
                          selector.border() if READING else reader.border(),
@@ -355,7 +355,8 @@ def read_messages(msgs, title, currentpage, totalpages, threadid):
                              sel_padd_left + title + sel_padd_right),
                          selector.footer(get_selector_footer(currentpage, totalpages)
                                          ) if not READING else u'',
-                         reader.footer(get_reader_footer(u'Post '+str(idx))
+                         #reader.footer(get_reader_footer(u'Post '+str(idx))
+                         reader.footer(get_reader_footer(cachetime)
                                        ) if READING else u'',
                          reader.refresh(),
                          ))
@@ -481,7 +482,7 @@ def getposts(threadid='3263403', number=40):
         authors.append(post.find('dt', {"class":['author','author platinum']}).text)
         bodies.append(post.find('td',{"class":"postbody"}).text.rstrip().lstrip())
 
-    return zip(authors, bodies, seens), title, currentpage, totalpages
+    return [zip(authors, bodies, seens), title, currentpage, totalpages]
 
 def makepost(threadid, body):
     from x84.bbs import getsession
@@ -661,6 +662,10 @@ def getfilelist(katalog):
 
 def main():
     """ Main procedure. """
+    import time
+    import memcache
+    import json
+    mc = memcache.Client(['104.131.0.180:11211'],debug=0)
     session = getsession()
     term = getterminal()
     session.activity = u'yospostin'
@@ -672,9 +677,16 @@ def main():
     lighty = 1                                    # ypos for the lightbar
     max_amount_rows = term.height - 2
 
-    filer = []
-    filer = getthreads()
-
+    getstart = time.time()
+    filerstr = mc.get(str(session.node)+'-yosindex')
+    if not filerstr:
+        filer = getthreads()
+        filerstr = json.dumps(filer)
+        mc.set(str(session.node)+'-yosindex',filerstr,30)
+        echo(term.move(term.height ,0)+'Cache miss: ' + str( time.time() - getstart) + ' seconds')
+    else:
+        echo(term.move(term.height ,0)+'Cache hit: ' + str( time.time() - getstart) + ' seconds')
+        filer = json.loads(filerstr)
     if len(filer) > max_amount_rows:
         antalrader = max_amount_rows
     else:
@@ -741,8 +753,19 @@ def main():
 
 
         if keypressed == term.KEY_ENTER:
-            msgs, title, currentpage, totalpages = getposts(filer[lightbarpos+offset][0])
-            read_messages(msgs, title, currentpage, totalpages, filer[lightbarpos+offset][0])
+            starttime = time.time()
+            getstart = time.time()
+            postsstr = mc.get(str(session.node)+str(filer[lightbarpos+offset][0]))
+            if not postsstr:
+                [msgs, title, currentpage, totalpages] = getposts(filer[lightbarpos+offset][0])
+                postsstr = json.dumps([msgs, title, currentpage, totalpages])
+                mc.set(str(session.node)+str(filer[lightbarpos+offset][0]),postsstr,30)
+                cachetime = str(time.time() - getstart)
+            else:
+                [msgs, title, currentpage, totalpages] = json.loads(postsstr)
+                cachetime = str(time.time() - getstart)
+ 
+            read_messages(msgs, title, currentpage, totalpages, filer[lightbarpos+offset][0], cachetime)
             echo(term.clear())
             redrawlightbar(filer, lighty,lightx,lightbarpos,offset,antalrader)
 

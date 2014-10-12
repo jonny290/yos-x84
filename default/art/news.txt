@@ -45,6 +45,9 @@ todo:
 
 
 
--rabbitmq replace msg system
+-rabbitmq replace IPC
+
 -memcached for various things
+--|04DONE!|07 for index!
+--|06DONE|07! for threads!
 -x84net(????)

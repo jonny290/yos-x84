@@ -38,12 +38,12 @@ def refresh(items=['all',]):
         ('g', 'eT OUt'),]
 
     # add LORD to menu only if enabled,
-#   if ini.CFG.getboolean('dosemu', 'enabled') and (
-#           ini.CFG.get('dosemu', 'lord_path') != 'no'):
-#       entries.insert(0, ('#', 'PlAY lORd!'))
+    #if ini.CFG.getboolean('dosemu', 'enabled'):# and (
+        #ini.CFG.get('dosemu', 'lord_path') != 'no'):
+    entries.insert(0, ('#', 'PlAY lORd!'))
 
-    if 'sysop' in session.user.groups:
-        entries += (('v', 'idEO CASSEttE'),)
+    #if 'sysop' in session.user.groups:
+    #    entries += (('v', 'idEO CASSEttE'),)
     menu_item_width = 20; #allows us 16 char columns after pad/key
     menu_columns = 4 
     menulist = list()
