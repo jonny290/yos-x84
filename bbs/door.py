@@ -40,8 +40,8 @@ class Dropfile(object):
     @property
     def fullname(self):
         from x84.bbs import getsession
-        return '%s %s' % (
-            getsession().user.handle,
+        return '%s' % (
+#           getsession().user.handle,
             getsession().user.handle,)
 
     @property

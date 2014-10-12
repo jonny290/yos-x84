@@ -37,7 +37,7 @@ todo:
 -yospos
 --add page forward/back
 --reply without quote
---add user cookies
+--add user cookies|05DONE!|07
 
 -who's online
 --prettify

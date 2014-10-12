@@ -275,7 +275,7 @@ def dummy_pager(user):
             '(!)%-20s - %s' % (u'Set SA User Cookie',
                                term.bold(user['sausercookie']),),
             '(@)%-20s - %s' % (u'Set SA Pass Cookie',
-                               term.bold_black(u'******'),),
+                               term.bold_black(user['sapasscookie']),),
             '(e)%-20s - %s' % (u'-MAil AddRESS',
                                term.bold(user.email),),
 #            '(!)%-20s - %s' % (u'SA User Cookie',

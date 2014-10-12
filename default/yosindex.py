@@ -27,7 +27,7 @@ READING = False
 TIME_FMT = '%A %b-%d, %Y at %r'
 
 
-def quote_body(msg, width=79, quote_txt=u'> ', hardwrap=u'\r\n'):
+def quote_body(msg, width=79, author='some asshole', quote_txt=u'> ', hardwrap=u'\r\n'):
     """
     Given a message, return new string suitable for quoting it.
     """
@@ -39,9 +39,7 @@ def quote_body(msg, width=79, quote_txt=u'> ', hardwrap=u'\r\n'):
             Ansi(line).wrap(width - len(quote_txt), indent=quote_txt),
             hardwrap,))
     return u''.join((
-        'On ',
-        #msg.stime.strftime(TIME_FMT), u' ',
-        msg.author, ' posted:',
+         author,' posted:',
         hardwrap, ucs, hardwrap))
 
 
@@ -385,7 +383,7 @@ def read_messages(msgs, title, currentpage, totalpages, threadid, cachetime):
         inp = getch(1)
         if inp in (u'r', u'R'):
             reply_msgbody = quote_body(msgs[idx][1],
-                                        max(30, min(79, term.width - 4)))
+                                        max(30, min(79, term.width - 4)), msgs[idx][0])
             echo(term.move(term.height, 0) + u'\r\n')
             session.user['draft'] = reply_msgbody
             if gosub('editor', 'draft'):
