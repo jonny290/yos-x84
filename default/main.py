@@ -90,7 +90,7 @@ def main():
         inp = getch(1)
         dirty = True
         if inp == u'*':
-            goto('main')  # reload main menu using hidden option '*'
+            refresh()
         elif inp == u'b':
             gosub('bbslist')
         elif inp == u'l':

@@ -272,6 +272,10 @@ def dummy_pager(user):
                                term.bold(user.location),),
             '(p)%-20s - %s' % (u'ASSWORd',
                                term.bold_black(u'******'),),
+            '(!)%-20s - %s' % (u'Set SA User Cookie',
+                               term.bold(user['sausercookie']),),
+            '(@)%-20s - %s' % (u'Set SA Pass Cookie',
+                               term.bold_black(u'******'),),
             '(e)%-20s - %s' % (u'-MAil AddRESS',
                                term.bold(user.email),),
 #            '(!)%-20s - %s' % (u'SA User Cookie',
@@ -296,7 +300,7 @@ def dummy_pager(user):
                                          if user.get('expert', False)
                                          else 'diSAblEd')),
             '(q)Uit', ]
-    echo(term.normal + u'\r\n\r\n')
+    echo(term.normal + term.clear() )
     lines = Ansi('\n'.join(menu)).wrap(term.width).splitlines()
     xpos = max(1, int(term.width / 2) - (40 / 2))
     for row, line in enumerate(lines):

@@ -1,10 +1,10 @@
 
 todo:
 -logon:
---prettify passwd
+--prettify passwd|09 Done!|07
 
 -nua:
---prettify
+--prettify |02In progress|07
 
 -main:
 --float to bottom|04done!|07
@@ -37,3 +37,14 @@ todo:
 -yospos
 --add page forward/back
 --reply without quote
+--add user cookies
+
+-who's online
+--prettify
+---make responsives
+
+
+
+-rabbitmq replace msg system
+-memcached for various things
+-x84net(????)
