@@ -82,7 +82,7 @@ def main(handle=None):
     logger = logging.getLogger()
 
     # 0. just a gimmicky example,
-    gosub('productive')
+#    gosub('productive')
 
     # 1. determine & assign user record,
     if handle in (None, u'', 'anonymous',):
@@ -123,6 +123,7 @@ def main(handle=None):
         echo(u'\r\n\r\nUsing preferred charset, %s%s.\r\n' % (
             session.encoding, fun))
 
+    echo(term.clear())
     # 4. impress with art, prompt for quick login (goto 'main'),
     if session.user.get('expert', False):
         dirty = True
