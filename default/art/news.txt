@@ -1,59 +1,39 @@
-|12Tue Apr  1 20:05:28 PDT 2014
-|08============================
 
-Release 1.1.0 has been reached -- 10 iterations! Much more than I thought. Special thanks to |12haliphax|07 and |12hellbeard|07 of |12telnet://oddnetwork.org|07 and |12telnet://bloodisland.ph4.se|07 for playing with x/84 and making their own customizations and driving these various updates.
+todo:
+-logon:
+--prettify passwd
 
-We are looking to improve upon messaging and intra-bbs messaging in the next release, at least with other x/84 boards.
+-nua:
+--prettify
 
-As for the terminal support in x/84, this has now been published as an independent package, 'blessed' and re-used with x/84. It has gone through a great deal of improvement, you may notice more keys on my terminals and better input encoding support for SyncTerm. Anyway, you can build your own python apps upon it:
+-main:
+--float to bottom
+--fix menu
+---fixed width entries
+---no float
 
-  |11https://pypi.python.org/pypi/blessed/
+--if > width: widescreen
+---sidebar
+----pick online or widgets
+--elsif > width2: wide2
+---both sidebars
 
-Expect to see some of the bbs applications in x/84 independently packaged and released to pypi as well -- others might make their way into the bbs -- for example, somebody recently created a 2048 clone with 'blessed':
+--widgets
+---big clock
+---weather
 
-  |11https://pypi.python.org/pypi/macht/
 
+--if > height: tall
+---scroller
 
-|12Sun Mar  2 14:57:06 PST 2014
-|08============================
+--select art or main
 
-Release 1.0.9 is now on pypi. New features include a revamped 'weather' program, and some new art from xzip!impure.  Otherwise, various bugs were resolved. Thanks to a few folk now running the bbs and providing feedback. Mercyful of |08htc.zapto.org|07 has also been using this bbs as a gatewaying host to test UTF8/CP437 translation -- what a strange thing! Regardless, |08htc.zapto.org|07 now supports UTF-8 encoding like this one, so give it a try!
+-twitter integration
+--user api key
+--front page twitter
+---scroller (height 1)
+---main (height height-menu)
 
-As for blessings, the upstream author has not been accepting patches, delayed over 1 year now. I will fork the project, tentatively named 'blessed'.
-
-|12Fri Jun  7 14:37:07 EDT 2013
-|08============================
-
-Release 1.0.5 is now on pypi. This release includes "dropfile" and concise dosemu support. An example lord.py door is used and hosted on 1984.ws.
-
-I'd also like to tell you about a new python 3.3 telnet API:
-
-  |11https://github.com/jquast/telnetlib3
-
-This may find its way back into x/84 in some coming years, after Guido's "tulip" module is released as a part of python 3.4.
-
-It features lightning-fast connect-time negotiation through the use of "futures", and all three line input modes: local line editing (half-duplex), remote line editing, and "kludge" mode, which is used here on x/84 and other bbs systems. It supports the telnet CHARSET option and on-the-fly changes of any encoding and binary mode bi-directionally (utf-8 input, cp437 output, for example). This is also complaint with *all* telnet clients, including MUD clients, and provides lightning-faster-than-ssh remote line editing for most unix telnet clients.
-
-|12Mon Apr 15 12:37:08 EDT 2013
-|08============================
-
-I've been contributing significant terminal fixes and enhancements upstream to the python 'blessings' project. They should become apart of a blessings v1.6 release. With these features, much of the x/84 codebase may be stripped and cleaned up, and several improvements to general readability.
-
-I wrote a pong game, and another "Newton's Nightmare" for keyboard and mouse test input. The mousewheel can be used to move the Pong paddle, and who knows, maybe we'll have 2-player Pong on the BBS soon :-)
-
-An early preview can be found at:
-
-  |11https://github.com/jquast/blessings
-
-|12Thu Feb 21 01:19:47 EST 2013
-|08============================
-
-x/84 version 1.0.4 has been released to pypi, to install:
-
-   $ |11pip install x84
-
-To upgrade:
-
-   $ |11pip install --upgrade x84
-
-This release improves editing and message reading capabilities. You may have noticed the |10Colors|07, which are safe to use in pager and lightbars. If you need to escape, use another pipe, '||13'. The |14Ansi|07 class now provides an additional method, |14encode_pipe|07, to accompany the previously existing method, |14decode_pipe|07.
+-yospos
+--add page forward/back
+--reply without quote

@@ -35,7 +35,7 @@ def refresh():
         ('e', 'dit PROfilE'),
     #   ('p', 'OSt A MSG'),
     #   ('r', 'EAd All MSGS'),
-        ('g', 'OOdbYE /lOGOff'),]
+        ('g', 'eT OUt'),]
 
     # add LORD to menu only if enabled,
 #   if ini.CFG.getboolean('dosemu', 'enabled') and (
@@ -44,22 +44,33 @@ def refresh():
 
     if 'sysop' in session.user.groups:
         entries += (('v', 'idEO CASSEttE'),)
+    menu_item_width = 20; #allows us 16 char columns after pad/key
+    menu_columns = 4 
+    menulist = list()
     buf_str = u''
+    menucol = 1
     for key, name in entries:
-        out_str = u''.join((
+        menutext =u''.join((term.green(name.split()[0]),
+            u' ', u' '.join(name.split()[1:]), ))
+        out_str = Ansi(u''.join((
             term.bold(u'('),
             term.bold_green_underline(key),
             term.bold(u')'),
-            term.green(name.split()[0]),
-            u' ', u' '.join(name.split()[1:]),
-            u'  '))
-        ansilen = len(Ansi(buf_str + out_str))
-        if ansilen >= (term.width * .8):
-            echo(Ansi(buf_str).center(term.width) + u'\r\n')
-            buf_str = out_str
-        else:
-            buf_str += out_str
-    echo(Ansi(buf_str).center(term.width) + u'\r\n')
+            menutext,
+            u'  '))).ljust(menu_item_width)
+        buf_str += out_str
+        menucol += 1
+        if menucol > menu_columns:
+            menulist.append(buf_str)
+            buf_str = u''
+            menucol = 1
+    if len(buf_str) > 0:
+        menulist.append(buf_str)
+    echo(term.move(term.height - len(menulist) - 1,0))
+    for i, m in enumerate(menulist):
+        echo(term.move(term.height - i - 2,0))
+        echo(Ansi(m).ljust(term.width))
+    echo(term.move(term.height - 1,0))
     echo(u' [%s]:' % (
         term.blue_underline(''.join([key for key, name in entries]))))
 
