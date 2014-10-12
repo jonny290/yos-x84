@@ -107,7 +107,7 @@ def try_pass(user):
     #         Too many local variables
     from x84.bbs import getsession, getterminal, ini, LineEditor, echo
     session, term = getsession(), getterminal()
-    prompt_pass = u'\r\n\r\n  pass: '
+    prompt_pass = u'pass: '
     status_auth = u'\r\n\r\n  ' + term.yellow_reverse(u"Encrypting ..")
     badpass_msg = (u'\r\n\r\n' + term.red_reverse +
                    u"'%s' login failed." + term.normal)
@@ -117,7 +117,7 @@ def try_pass(user):
     # topscript if sucessful.
     # pylint: disable=W0212
     #         Access to a protected member _tap_input of a client class
-    echo(prompt_pass)
+    echo(term.move(term.height, max_pass + 10) + prompt_pass)
     chk = session._tap_input  # <-- save
     session._tap_input = False
     lne = LineEditor(max_pass)

@@ -3,7 +3,7 @@
 """
 
 
-def refresh():
+def refresh(items=['all',]):
 
     """ Refresh main menu. """
     # pylint: disable=R0914

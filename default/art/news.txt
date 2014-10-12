@@ -7,10 +7,10 @@ todo:
 --prettify
 
 -main:
---float to bottom
---fix menu
----fixed width entries
----no float
+--float to bottom|04done!|07
+--fix menu|04Done!|07
+---fixed width entries|04 Done!|07
+---no float|04 Done!|07
 
 --if > width: widescreen
 ---sidebar
