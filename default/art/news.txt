@@ -39,6 +39,7 @@ todo:
 --reply without quote
 --add user cookies|05DONE!|07
 --human friendly last-post times |02DONE!|07
+--add thread ratings, post numbers
 
 -who's online
 --prettify
