@@ -626,6 +626,8 @@ def displayfile(filename):
 # ---------------------------------------------------
 
 def redrawlightbar(filer, lighty,lightx,lightbar,start,antalrader): # if the variable lightbar is negative the lightbar will be invisible
+    import time
+    from x84.bbs import timeago
     term = getterminal()
     echo(term.move(lighty,lightx))
 
@@ -634,7 +636,13 @@ def redrawlightbar(filer, lighty,lightx,lightbar,start,antalrader): # if the var
 
     i2 = 0
     for i in range (start,start+antalrader):
-        rightbar = filer[i][5].rjust(19)+u' '+filer[i][6].zfill(8)
+        origtime = filer[i][6].strip()
+        secsago = timeago(time.time() - (3600 * 6)- time.mktime(time.strptime(origtime,"%I:%M %p %b %d, %Y")))
+        
+        if secsago[-1] == 's':
+            secsago = secsago[:-3]
+        secsago = u''.join([ u' ' * (8-len(secsago)),  secsago ])
+        rightbar = filer[i][5].rjust(19)+u' '+ str(secsago)
         leftbar = filer[i][1][:term.width - len(rightbar) - 5]
         if i2 == lightbar:
             echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+leftbar+term.normal)
