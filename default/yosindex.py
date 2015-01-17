@@ -503,13 +503,15 @@ def makepost(threadid, body):
 
 def getthreads(number=20):
     from x84.bbs import getsession
-    session = getsession()
+    session = getsession() 
     url = 'http://forums.somethingawful.com/forumdisplay.php?forumid=219'
+#cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
     cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
+    #cookies = dict(bbuserid='78389', bbpassword='9bf24e58b249fd296f751a98456ce72d')
+    print url
     response = requests.get(url, cookies=cookies)
     soup = bs4.BeautifulSoup(response.text)
-    threads = soup.findAll("tr", {'class':['thread', 'thread seen']})
-    
+    threads = soup.findAll("tr", {'class':['thread', 'thread seen']})[1:]
     ids = [a['id'].split('d')[1] for a in threads] 
     titles = []
     authors = []
@@ -538,6 +540,7 @@ def getthreads(number=20):
         lastposttimes.append(u''.join(thread.find('td', {"class":"lastpost"}).find('div', {"class":"date"}).string))
         lastpostbys.append(thread.find('td', {"class":"lastpost"}).find('a', {"class":"author"}).string)
     return zip(ids, titles, authors, unreads, ratings, lastpostbys, lastposttimes)
+
 
 # ---------------------------------------------------
 
@@ -645,9 +648,9 @@ def redrawlightbar(filer, lighty,lightx,lightbar,start,antalrader): # if the var
         rightbar = filer[i][5].rjust(19)+u' '+ str(secsago)
         leftbar = filer[i][1][:term.width - len(rightbar) - 5]
         if i2 == lightbar:
-            echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+leftbar+term.normal)
+            echo(term.move(lighty+i-start-1,lightx)+term.blue_reverse+leftbar[:10]+term.normal)
         else:
-            echo(term.move(lighty+i-start-1,lightx)+term.white+leftbar+term.normal)
+            echo(term.move(lighty+i-start-1,lightx)+term.white+leftbar[:10]+term.normal)
         echo(term.move(lighty+i-start-1,term.width - len(rightbar) - 2)+rightbar+term.normal)
         i2 = i2 + 1
 
@@ -731,7 +734,7 @@ def main():
             redrawlightbar(filer, lighty,lightx,lightbarpos,offset,antalrader)
 
         if keypressed == term.KEY_UP and lightbarpos+offset > -1:
-            echo(term.white+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1]) # restore colour on the old coordinate
+            echo(term.white+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1][:20]) # restore colour on the old coordinate
             lightbarpos = lightbarpos - 1 
             if lightbarpos < 0:
                if offset > 0:
@@ -739,17 +742,17 @@ def main():
                lightbarpos = lightbarpos + 1
                redrawlightbar(filer, lighty,lightx,-1,offset,antalrader)
 
-            echo(term.blue_reverse+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1]+term.normal)
+            echo(term.blue_reverse+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1][:10]+term.normal)
 
         if keypressed == term.KEY_DOWN and lightbarpos+offset < len(filer)-1:
-            echo(term.white+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1]) # restore colour on the old coordnate 
+            echo(term.white+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1][:10]) # restore colour on the old coordnate 
             lightbarpos = lightbarpos + 1
             if lightbarpos > antalrader-1:
                offset = offset + 1
                lightbarpos = lightbarpos- 1
                redrawlightbar(filer, lighty,lightx,-1,offset,antalrader)
 
-            echo(term.blue_reverse+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1]+term.normal)
+            echo(term.blue_reverse+term.move(lighty+lightbarpos-1,lightx)+filer[lightbarpos+offset][1][:10]+term.normal)
 
         if keypressed == 'h':
             helpscreen()            
