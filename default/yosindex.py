@@ -505,9 +505,7 @@ def getthreads(number=20):
     from x84.bbs import getsession
     session = getsession() 
     url = 'http://forums.somethingawful.com/forumdisplay.php?forumid=219'
-#cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
     cookies = dict(bbuserid=session.user['sausercookie'], bbpassword=session.user['sapasscookie'])
-    #cookies = dict(bbuserid='78389', bbpassword='9bf24e58b249fd296f751a98456ce72d')
     print url
     response = requests.get(url, cookies=cookies)
     soup = bs4.BeautifulSoup(response.text)
